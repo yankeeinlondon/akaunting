@@ -1,0 +1,60 @@
+# Simplified Dockerfile - Build assets locally first
+# Run: npm install && npm run production
+# Then: docker build -f Dockerfile.simple -t akaunting .
+
+FROM php:8.3-fpm AS base
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    libzip-dev \
+    libicu-dev \
+    libfreetype6-dev \
+    libjpeg62-turbo-dev \
+    unzip \
+    zip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install PHP extensions required by Akaunting
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) \
+    bcmath \
+    intl \
+    gd \
+    mbstring \
+    pdo_mysql \
+    xml \
+    zip
+
+# Install Composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+# Set working directory
+WORKDIR /var/www/html
+
+# Copy application files
+COPY . .
+
+# Install PHP dependencies
+RUN composer install --no-dev --no-scripts --optimize-autoloader --ignore-platform-reqs
+
+# Set proper permissions
+RUN chown -R www-data:www-data /var/www/html \
+    && chmod -R 755 /var/www/html/storage \
+    && chmod -R 755 /var/www/html/bootstrap/cache
+
+# Development stage
+FROM base AS development
+
+# Install dev dependencies
+RUN composer install --no-scripts --optimize-autoloader --ignore-platform-reqs
+
+# Expose port 8000
+EXPOSE 8000
+
+# Start Laravel dev server
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]

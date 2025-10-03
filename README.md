@@ -38,6 +38,44 @@ php artisan install --db-name="akaunting" --db-username="root" --db-password="pa
 
 * Create sample data (optional): `php artisan sample-data:seed`
 
+## Containerization
+
+Akaunting provides Docker support for easy setup and deployment.
+
+### Quick Start
+
+**First-time setup** (⚠️ **This will delete existing data!**):
+
+```bash
+./scripts/initialize.sh
+```
+
+**Start existing installation** (preserves data):
+
+```bash
+./scripts/start.sh
+```
+
+### Access URLs
+
+- **Application:** http://localhost:8000
+- **phpMyAdmin:** http://localhost:8080
+- **Default Login:** admin@company.com / 123456
+
+### Important Notes
+
+- `initialize.sh` - Use for **first-time setup only**. Deletes all existing data.
+- `start.sh` - Use to **start/restart** an existing installation. Preserves data.
+- Frontend assets must be built locally: `npm install --legacy-peer-deps && npm run production`
+
+For detailed documentation, see [Containerization Guide](./docs/containerization.md).
+
+### API Access
+
+The self-hosted installation includes a full REST API for programmatic access to all features. See [API Documentation](./docs/api.md) for complete endpoint reference.
+
+**Note**: This is separate from the "API Key" feature in the UI, which connects to Akaunting's cloud marketplace.
+
 ## Contributing
 
 Please, be very clear on your commit messages and Pull Requests, empty Pull Request messages may be rejected without reason.

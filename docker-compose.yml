@@ -1,0 +1,88 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: akaunting-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: akaunting
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_USER: akaunting_user
+      MYSQL_PASSWORD: akaunting_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - akaunting-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_password"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Akaunting Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.local
+      target: development
+    container_name: akaunting-app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    mem_limit: 4g
+    memswap_limit: 4g
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount source code for development
+      - .:/var/www/html
+      # Persist storage
+      - storage_data:/var/www/html/storage
+      # Persist uploaded files
+      - ./storage/app:/var/www/html/storage/app
+    environment:
+      - APP_ENV=local
+      - APP_DEBUG=true
+      - DB_CONNECTION=mysql
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_DATABASE=akaunting
+      - DB_USERNAME=akaunting_user
+      - DB_PASSWORD=akaunting_pass
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - akaunting-network
+    command: php artisan serve --host=0.0.0.0 --port=8000
+
+  # phpMyAdmin (Optional - for database management)
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: akaunting-phpmyadmin
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: root_password
+      MYSQL_ROOT_PASSWORD: root_password
+    depends_on:
+      - mysql
+    networks:
+      - akaunting-network
+
+networks:
+  akaunting-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+    driver: local
+  storage_data:
+    driver: local
